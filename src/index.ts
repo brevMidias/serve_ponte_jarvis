@@ -27,10 +27,15 @@ async function main() {
         logger.info({ port: config.port }, '✅ Servidor HTTP iniciado');
 
         // Log de configuração
+        const modeloAtivo = config.aiProvider === 'mistral'
+            ? config.mistral.model
+            : config.deepseek.model;
+
         logger.info({
             ambiente: config.nodeEnv,
             http: `http://${config.host}:${config.port}`,
-            ia: config.deepseek.model,
+            aiProvider: config.aiProvider,
+            ia: modeloAtivo,
             webhook: config.webhook.url,
             rateLimit: `${config.security.rateLimitMax} req/${config.security.rateLimitWindow}ms`
         }, '🚀 Jarvis Bridge pronto!');
