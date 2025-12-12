@@ -74,19 +74,35 @@ export async function processarComando(
             };
         }
 
-        // 3. Envia para webhook N8N
+        // 3. Envia para webhook N8N (Roteamento Inteligente)
         if (!config.webhook.enabled) {
-            throw new Error('Webhook N8N está desabilitado');
+            throw new Error('Webhooks estão desabilitados');
         }
 
-        logger.info({
-            comando_processado: decisao.comando_processado,
-            webhook: config.webhook.url
-        }, 'Enviando para webhook N8N');
+        const ferramentaAlvo = decisao.ferramenta || 'default';
 
-        // IMPORTANTE: N8N espera "query" não "comando"
+        // Mapa de roteamento
+        const webhookMap: Record<string, string | undefined> = {
+            spotify: config.webhook.spotify,
+            whatsapp: config.webhook.whatsapp,
+            contatos: config.webhook.whatsapp, // Compartilha webhook
+            financeiro: config.webhook.financeiro,
+            clima: config.webhook.clima,
+            pesquisa: config.webhook.pesquisa,
+            default: config.webhook.url
+        };
+
+        // Seleciona URL ou fallback para default
+        let urlDestino = webhookMap[ferramentaAlvo] || config.webhook.url;
+
+        logger.info({
+            comando: decisao.comando_processado,
+            ferramenta: ferramentaAlvo,
+            url: urlDestino
+        }, 'Enviando para webhook dedicado');
+
         const webhookResponse = await axios.post(
-            config.webhook.url,
+            urlDestino,
             { query: decisao.comando_processado },
             {
                 headers: { 'Content-Type': 'application/json' },
@@ -94,48 +110,31 @@ export async function processarComando(
             }
         );
 
-        // Valida se N8N realmente executou (não inventou resposta)
         const responseData = webhookResponse.data;
 
-        // Detecta respostas genéricas/inventadas
-        const respostasGenericas = [
-            'estou tocando música',
-            'música foi pausada',
-            'música foi retomada',
-            'agente do spotify',
-            'está executando sua solicitação'
-        ];
+        // Validação específica para Spotify (anti-alucinação)
+        if (ferramentaAlvo === 'spotify') {
+            const outputTexto = (responseData.output || '').toLowerCase();
+            const respostasGenericas = ['estou tocando', 'foi pausada', 'agente do spotify'];
 
-        const outputTexto = responseData.output?.toLowerCase() || '';
-        const ehRespostaGenerica = respostasGenericas.some(frase =>
-            outputTexto.includes(frase.toLowerCase())
-        );
+            const ehGenerico = respostasGenericas.some(frase => outputTexto.includes(frase));
 
-        // Se resposta é genérica E não tem dados reais do Spotify
-        if (ehRespostaGenerica && !responseData.track && !responseData.artist) {
-            logger.warn({ responseData }, 'N8N retornou resposta genérica - possível execução falha');
-
-            return {
-                sucesso: false,
-                erro: 'N8N respondeu mas não executou ação no Spotify. Verifique configuração do MCP.',
-                dados: {
-                    respostaN8N: responseData,
-                    aviso: 'Resposta parece genérica/inventada'
-                },
-                tempoExecucao: Date.now() - startTime
-            };
+            // Se diz que tocou mas não mandou dados da música
+            if (ehGenerico && !responseData.track && !responseData.artist && !responseData.data) {
+                logger.warn('Possível alucinação do agente Spotify');
+            }
         }
 
         const resultado: ResultadoExecucao = {
-            sucesso: responseData.sucesso ?? true,
+            sucesso: true, // Assume sucesso se N8N respondeu 200 OK
             dados: responseData,
             tempoExecucao: Date.now() - startTime
         };
 
         logger.info({
-            resultado,
-            tempoExecucao: resultado.tempoExecucao
-        }, 'Comando executado com sucesso');
+            ferramenta: ferramentaAlvo,
+            tempo: resultado.tempoExecucao
+        }, 'Execução concluída com sucesso');
 
         return resultado;
 

@@ -8,7 +8,8 @@ import { z } from 'zod';
 export const DecisaoSchema = z.object({
     comando_processado: z.string().min(1).max(1000),
     confianca: z.number().min(0).max(1),
-    raciocinio: z.string().optional()
+    raciocinio: z.string().optional(),
+    ferramenta: z.enum(['spotify', 'whatsapp', 'financeiro', 'clima', 'pesquisa', 'contatos', 'default']).default('default')
 });
 
 // Schema do comando de entrada

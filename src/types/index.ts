@@ -17,10 +17,13 @@ export interface ComandoEntrada {
     timestamp?: number;
 }
 
+export type Ferramenta = 'spotify' | 'whatsapp' | 'financeiro' | 'clima' | 'pesquisa' | 'contatos' | 'default';
+
 export interface DecisaoIA {
     comando_processado: string;
     confianca: number;
     raciocinio?: string;
+    ferramenta: Ferramenta;
 }
 
 export interface ResultadoExecucao {

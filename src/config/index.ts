@@ -29,7 +29,12 @@ const ConfigSchema = z.object({
     webhook: z.object({
         url: z.string().url(),
         enabled: z.coerce.boolean().default(true),
-        timeout: z.coerce.number().default(10000)
+        timeout: z.coerce.number().default(60000),
+        spotify: z.string().trim().url().optional(),
+        whatsapp: z.string().trim().url().optional(),
+        financeiro: z.string().trim().url().optional(),
+        clima: z.string().trim().url().optional(),
+        pesquisa: z.string().trim().url().optional()
     }),
 
     log: z.object({
@@ -60,7 +65,12 @@ const rawConfig = {
     webhook: {
         url: process.env.JARVIS_WEBHOOK_URL,
         enabled: process.env.JARVIS_WEBHOOK_ENABLED,
-        timeout: process.env.JARVIS_WEBHOOK_TIMEOUT
+        timeout: process.env.JARVIS_WEBHOOK_TIMEOUT,
+        spotify: process.env.WEBHOOK_SPOTIFY,
+        whatsapp: process.env.WEBHOOK_WHATSAPP,
+        financeiro: process.env.WEBHOOK_FINANCEIRO,
+        clima: process.env.WEBHOOK_CLIMA,
+        pesquisa: process.env.WEBHOOK_PESQUISA
     },
 
     log: {
