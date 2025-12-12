@@ -12,6 +12,19 @@ const ConfigSchema = z.object({
     port: z.coerce.number().default(3000),
     host: z.string().default('0.0.0.0'),
 
+    // Seletor de provedor de IA
+    aiProvider: z.enum(['mistral', 'deepseek']).default('mistral'),
+
+    // Mistral AI (Padrão)
+    mistral: z.object({
+        apiKey: z.string().min(1),
+        baseUrl: z.string().url().default('https://api.mistral.ai/v1'),
+        model: z.string().default('mistral-small-latest'),
+        maxTokens: z.coerce.number().default(200),
+        temperature: z.coerce.number().default(0)
+    }),
+
+    // DeepSeek (Alternativa)
     deepseek: z.object({
         apiKey: z.string().min(1),
         baseUrl: z.string().url().default('https://api.deepseek.com/v1'),
@@ -47,6 +60,16 @@ const rawConfig = {
     nodeEnv: process.env.NODE_ENV,
     port: process.env.PORT,
     host: process.env.HOST,
+
+    aiProvider: process.env.AI_PROVIDER,
+
+    mistral: {
+        apiKey: process.env.MISTRAL_API_KEY,
+        baseUrl: process.env.MISTRAL_BASE_URL,
+        model: process.env.MISTRAL_MODEL,
+        maxTokens: process.env.MISTRAL_MAX_TOKENS,
+        temperature: process.env.MISTRAL_TEMPERATURE
+    },
 
     deepseek: {
         apiKey: process.env.DEEPSEEK_API_KEY,

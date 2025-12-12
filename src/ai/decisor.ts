@@ -1,5 +1,5 @@
 // ===========================================================
-// IA DECISORA - DEEPSEEK (PROCESSA E ENVIA PARA WEBHOOK)
+// IA DECISORA - SUPORTA MISTRAL (PADRÃO) E DEEPSEEK
 // ===========================================
 
 import OpenAI from 'openai';
@@ -10,11 +10,41 @@ import { DecisaoSchema } from '../validators/schemas.js';
 import { logger } from '../utils/logger.js';
 import { config } from '../config/index.js';
 
-// DeepSeek usa API compatível com OpenAI
-const deepseek = new OpenAI({
+// Inicializar cliente Mistral (Padrão)
+const mistralClient = new OpenAI({
+    apiKey: config.mistral.apiKey,
+    baseURL: config.mistral.baseUrl
+});
+
+// Inicializar cliente DeepSeek (Alternativa)
+const deepseekClient = new OpenAI({
     apiKey: config.deepseek.apiKey,
     baseURL: config.deepseek.baseUrl
 });
+
+// Seletor dinâmico de cliente IA
+const getAIClient = () => {
+    if (config.aiProvider === 'deepseek') {
+        logger.info('Usando DeepSeek como provedor de IA');
+        return {
+            client: deepseekClient,
+            model: config.deepseek.model,
+            maxTokens: config.deepseek.maxTokens,
+            temperature: config.deepseek.temperature,
+            provider: 'DeepSeek'
+        };
+    }
+
+    // Padrão: Mistral
+    logger.info('Usando Mistral AI como provedor de IA (padrão)');
+    return {
+        client: mistralClient,
+        model: config.mistral.model,
+        maxTokens: config.mistral.maxTokens,
+        temperature: config.mistral.temperature,
+        provider: 'Mistral'
+    };
+};
 
 /**
  * Processa comando e envia para webhook N8N
@@ -32,13 +62,17 @@ export async function processarComando(
 
         const contexto = { sessaoId: sessionId, ...contextoExtra };
 
-        // 1. DeepSeek processa o comando
+        // 1. Selecionar provedor de IA configurado
+        const aiConfig = getAIClient();
+        logger.info({ provider: aiConfig.provider }, 'Cliente IA selecionado');
+
+        // 2. Processar comando com a IA selecionada
         const systemPrompt = getSystemPrompt(contexto);
 
-        const response = await deepseek.chat.completions.create({
-            model: config.deepseek.model,
-            max_tokens: config.deepseek.maxTokens,
-            temperature: config.deepseek.temperature,
+        const response = await aiConfig.client.chat.completions.create({
+            model: aiConfig.model,
+            max_tokens: aiConfig.maxTokens,
+            temperature: aiConfig.temperature,
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: `Comando: "${comando}"` }

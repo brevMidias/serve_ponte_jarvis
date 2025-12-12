@@ -1,5 +1,5 @@
 // ===========================================
-// SYSTEM PROMPTS DEEPSEEK
+// SYSTEM PROMPTS - MISTRAL / DEEPSEEK
 // ===========================================
 
 import { ContextoSistema } from '../types/index.js';
