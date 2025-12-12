@@ -2,6 +2,7 @@ module.exports = {
     apps: [{
         name: 'jarvis-bridge',
         script: 'dist/index.js',
+        exec_mode: 'fork',  // Modo fork para uma única instância
         instances: 1,
         autorestart: true,
         watch: false,
